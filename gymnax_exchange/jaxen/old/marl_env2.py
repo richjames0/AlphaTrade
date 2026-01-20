@@ -30,7 +30,7 @@ from gymnax_exchange.utils import utils
 
 import faulthandler
 faulthandler.enable()
-chex.assert_gpu_available(backend=None)
+# chex.assert_gpu_available(backend=None)
 print("Num Jax Devices:", jax.device_count(), "Device List:", jax.devices())
 jax.numpy.set_printoptions(linewidth=183)
 

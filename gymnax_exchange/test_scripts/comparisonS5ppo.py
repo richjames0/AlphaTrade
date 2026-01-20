@@ -10,7 +10,7 @@ sys.path.append('/Users/sasrey/AlphaTrade')
 sys.path.append('/homes/80/kang/AlphaTrade')
 import chex
 import faulthandler; faulthandler.enable()
-chex.assert_gpu_available(backend=None)
+# chex.assert_gpu_available(backend=None)
 from jax import config # Code snippet to disable all jitting.
 config.update("jax_disable_jit", False)
 # config.update("jax_disable_jit", True)

@@ -389,8 +389,6 @@ def create_agent_configs(config):
     
     Args:
         config: The full config dict containing both JSON config and sweep parameters
-        config_dict: Dict mapping agent type names to their config classes
-                    e.g., {"MarketMaking": MarketMaking_EnvironmentConfig, ...}
     
     Returns:
         Dict of agent configs keyed by agent type name
@@ -418,6 +416,17 @@ def create_agent_configs(config):
             
             # Create the agent config with all overrides
             agent_configs[agent_type] = agent_config_class(**all_overrides)
+    else:
+        # Fallback: use dict_of_agents_configs from config (defaults/JSON)
+        for agent_type, agent_cfg_dict in config.get("dict_of_agents_configs", {}).items():
+             if agent_type in CONFIG_OBJECT_DICT:
+                 if isinstance(agent_cfg_dict, dict):
+                     # Filter keys that are valid for the dataclass
+                     valid_keys = {f.name for f in fields(CONFIG_OBJECT_DICT[agent_type])}
+                     filtered_dict = {k: v for k, v in agent_cfg_dict.items() if k in valid_keys}
+                     agent_configs[agent_type] = CONFIG_OBJECT_DICT[agent_type](**filtered_dict)
+                 else:
+                     agent_configs[agent_type] = agent_cfg_dict
     
     return agent_configs
 
@@ -1147,7 +1156,8 @@ def main(config):
         save_config_to_file(env_config,f"config/env_configs/default_config_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     print("Note: The sweep parameters in yaml will override these settings.")
     env_config=OmegaConf.structured(env_config)
-    final_config=OmegaConf.merge(config,env_config)
+    env_config_unstructured = OmegaConf.create(OmegaConf.to_container(env_config, resolve=True))
+    final_config=OmegaConf.merge(env_config_unstructured, config)
     config = OmegaConf.to_container(final_config)
 
 
@@ -1180,7 +1190,7 @@ def main(config):
 
     
         # +++++ Single GPU +++++
-        rng = jax.random.PRNGKey(wandb.config["SEED"])
+        rng = jax.random.PRNGKey(config["SEED"])
 
         print("Final check: the wandb.config object used in this run is \n \t", wandb.config)
 
@@ -1188,7 +1198,7 @@ def main(config):
             start_time = time.time()
 
 
-        train_fun = make_train(wandb.config)
+        train_fun = make_train(config)
         out = train_fun(rng,run)
         # train_state = out['runner_state'][0] # runner_state.train_state
         # params = train_state.params
@@ -1249,9 +1259,13 @@ def main(config):
         jax.clear_caches()
         jax.local_devices()  # This can help trigger cleanup of device buffers
         run.finish()
-    sweep_id = wandb.sweep(sweep=sweep_config, project=config["PROJECT"],entity=config["ENTITY"])
-    print("The sweep ID is: ",sweep_id)
-    wandb.agent(sweep_id, function=sweep_fun, count=500,)
+    if config.get("DISABLE_SWEEP", False):
+        print("Running single run without sweep.")
+        sweep_fun()
+    else:
+        sweep_id = wandb.sweep(sweep=sweep_config, project=config["PROJECT"],entity=config["ENTITY"])
+        print("The sweep ID is: ",sweep_id)
+        wandb.agent(sweep_id, function=sweep_fun, count=500,)
 
 
     sys.exit(0)

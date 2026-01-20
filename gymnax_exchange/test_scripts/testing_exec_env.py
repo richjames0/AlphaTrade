@@ -22,7 +22,7 @@ from jax import config
 config.update("jax_check_tracer_leaks",False)
 
 
-chex.assert_gpu_available(backend=None)
+# chex.assert_gpu_available(backend=None)
 
 #Code snippet to disable all jitting.
 #from jax import config
