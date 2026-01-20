@@ -73,3 +73,6 @@ ppo-tpu:
 
 ppo-tpu-pmap:
 	docker run --privileged --ulimit memlock=-1:-1 $(BASE_FLAGS) $(PORT_FLAGS) $(IMAGE_TPU) /bin/bash -c "python3 ./gymnax_exchange/jaxrl/MARL/ippo_rnn_JAXMARL_pmap.py TimePeriod='2012-06-21' EvalTimePeriod='2012-06-21' WANDB_MODE=disabled +DISABLE_SWEEP=True"
+
+test-env-tpu:
+	docker run --privileged --ulimit memlock=-1:-1 $(BASE_FLAGS) $(PORT_FLAGS) $(IMAGE_TPU) /bin/bash -c "python3 gymnax_exchange/jaxen/marl_env.py --stock AMZN --timeperiod 2012-06-21"
