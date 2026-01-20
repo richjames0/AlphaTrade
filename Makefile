@@ -14,7 +14,7 @@ SERVER_NAME = $(shell hostname)
 ifeq ($(SERVER_NAME),flair-node-12)
 DATADIR=/homes/80/sascha/data
 else
-DATADIR=~/data_local/data
+DATADIR=/home/rjx_google_com/src/scratch/lobsterdata
 endif
 SCRATCH_DIR=~/scratch_LOB
 BASE_FLAGS=-it --rm -v ${PWD}:/home/$(MYUSER) -v $(DATADIR):/home/$(MYUSER)/data -v $(SCRATCH_DIR):/home/$(MYUSER)/scratch --shm-size 20G
@@ -59,3 +59,17 @@ plot_trajectories:
 workflow-test:
 	# without -it flag
 	docker run --rm -v ${PWD}:/home/workdir --shm-size 20G $(IMAGE) /bin/bash -c "pytest ./tests/"
+
+IMAGE_TPU = jaxmarl_tpu:latest
+
+build-tpu:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile_TPU --build-arg MYUSER=$(MYUSER) --build-arg UID=$(ID) --tag $(IMAGE_TPU) --progress=plain .
+
+run-tpu:
+	docker run --privileged --ulimit memlock=-1:-1 $(BASE_FLAGS) $(PORT_FLAGS) $(IMAGE_TPU) /bin/bash
+
+ppo-tpu:
+	docker run --privileged --ulimit memlock=-1:-1 $(BASE_FLAGS) $(PORT_FLAGS) $(IMAGE_TPU) /bin/bash -c "python3 ./gymnax_exchange/jaxrl/MARL/ippo_rnn_JAXMARL.py TimePeriod='2012-06-21' EvalTimePeriod='2012-06-21' WANDB_MODE=disabled +DISABLE_SWEEP=True"
+
+ppo-tpu-pmap:
+	docker run --privileged --ulimit memlock=-1:-1 $(BASE_FLAGS) $(PORT_FLAGS) $(IMAGE_TPU) /bin/bash -c "python3 ./gymnax_exchange/jaxrl/MARL/ippo_rnn_JAXMARL_pmap.py TimePeriod='2012-06-21' EvalTimePeriod='2012-06-21' WANDB_MODE=disabled +DISABLE_SWEEP=True"
